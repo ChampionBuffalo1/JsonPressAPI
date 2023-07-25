@@ -10,6 +10,7 @@ import { createMongoConnection } from './lib/connect';
   config();
   const app = express();
   app.use(cors(), express.json(), express.urlencoded({ extended: true }));
+  app.disable('x-powered-by');
   await createMongoConnection();
 
   app.use(passport.initialize());
