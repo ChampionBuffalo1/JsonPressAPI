@@ -20,6 +20,7 @@ const createMongoConnection = (): Promise<void> =>
         .set('strictQuery', true)
         .connect(process.env.MONGO_URL, dbOptions)
         .then(() => {
+          retryCount = 0;
           mongoConnected = true;
           resolve();
         })
@@ -32,11 +33,8 @@ const createMongoConnection = (): Promise<void> =>
         });
 
       mongoose.connection.on('connected', () => Logger.info('MongoDB connected successfully.'));
-      mongoose.connection.on('open', () => Logger.debug('onOpen has successfully executed on all model'));
       mongoose.connection.on('error', err => {
-        retryCount = 0;
         mongoConnected = false;
-
         const retryTime = MINUTE * 2;
 
         setTimeout(createMongoConnection, retryTime);
