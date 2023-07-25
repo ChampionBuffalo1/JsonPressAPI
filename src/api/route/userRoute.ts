@@ -6,9 +6,9 @@ import User from '../../models/User';
 import { generateJwtToken } from '../../lib';
 import { UserType } from '../../typings/model';
 import { bcryptRounds } from '../../Constants';
-import { userCreate, userLogin, userPassSchema } from '../../validators';
 import { isAllowedToCreate, isLoggedIn } from '../../middleware/authorized';
-import { createUser, getUser, getUserByEmail } from '../../controller/userController';
+import { addSocialMedia, createUser, getUser, getUserByEmail } from '../../controller/userController';
+import { userCreate, userLogin, userPassSchema, userSocialUpdate } from '../../validators';
 
 const userRouter = Router();
 
@@ -132,19 +132,35 @@ userRouter.get('/', isLoggedIn, async (req, res) => {
   });
 });
 
-// userRouter.post('/update', isLoggedIn, async (req, res) => {
-//   const schema = await userUpdateSchema.spa(req.body);
-//   if (schema.success) {
-//     await User.findOneAndUpdate(
-//       {
-//         _id: req.user?._id.toString()
-//       },
-//     );
-//   } else {
-//     const error = getZodError(schema.error.issues);
-//     res.status(400).json({ error });
-//   }
-// });
+userRouter.post('/addSocial', isLoggedIn, async (req, res) => {
+  const id = (req.user as UserType)?._id.toString();
+  const schema = await userSocialUpdate.spa(req.body);
+  if (!schema.success) {
+    const error = getZodError(schema.error.issues);
+    res.status(400).send({
+      error
+    });
+    return;
+  }
+  const { type, value } = schema.data;
+  const user = await getUser(id);
+  if (!user) {
+    res.status(404).send({
+      message: 'User not found'
+    });
+    return;
+  }
+  const udpated = await addSocialMedia(id, type, value);
+  if (!udpated) {
+    res.status(500).send({
+      message: 'Something went wrong'
+    });
+    return;
+  }
+  res.status(200).send({
+    udpated
+  });
+});
 
 userRouter.post('/delete', isLoggedIn, async (req, res) => {
   const id = (req.user as UserType)?._id.toString();

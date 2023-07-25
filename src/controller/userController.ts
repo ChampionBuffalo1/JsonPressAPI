@@ -45,6 +45,7 @@ function getUserByEmail(email: string): Promise<Nullable<UserType>> {
     }
   );
 }
+
 function getUser(id: string): Promise<Nullable<UserType>> {
   return User.findById(
     {
@@ -57,4 +58,28 @@ function getUser(id: string): Promise<Nullable<UserType>> {
   );
 }
 
-export { createUser, editUser, deleteUser, getUser, getUserByEmail };
+function addSocialMedia(
+  _id: string,
+  type: 'website' | 'twitter' | 'instagram',
+  value: string
+): Promise<Nullable<UserType>> {
+  const setObj: Record<string, string> = {};
+  setObj[`socialMedia.${type}`] = value;
+  return User.findByIdAndUpdate(
+    {
+      _id
+    },
+    {
+      $set: setObj
+    },
+    {
+      projection: {
+        name: true,
+        socialMedia: true
+      },
+      lean: true
+    }
+  );
+}
+
+export { createUser, editUser, deleteUser, getUser, getUserByEmail, addSocialMedia };
