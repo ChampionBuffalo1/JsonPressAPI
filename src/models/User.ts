@@ -22,7 +22,6 @@ const UserSchema = new Schema<UserType>(
       default: 'normal'
     },
     socialMedia: {
-      default: {},
       type: {
         twitter: String,
         instagram: String,
