@@ -16,16 +16,9 @@ const userLogin = z.object({
   password: z.string().min(8).max(100)
 });
 
-const userUpdateSchema = z.object({
-  image: z.string().url().optional(),
-  name: z.string().min(3).max(100).optional(),
-  socialMedia: z
-    .object({
-      twitter: z.string().url().optional(),
-      website: z.string().url().optional(),
-      instagram: z.string().url().optional()
-    })
-    .optional()
+const userSocialUpdate = z.object({
+  type: z.enum(['twitter', 'instagram', 'website']),
+  value: z.string().url()
 });
 
-export { userLogin, userCreate, userPassSchema, userUpdateSchema };
+export { userLogin, userCreate, userPassSchema, userSocialUpdate };
