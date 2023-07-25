@@ -21,7 +21,7 @@ userRouter.post('/login', async (req, res) => {
       res.status(404).send('User not found');
       return;
     }
-    console.log(user);
+
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (valid) {
       res.status(200).send({
