@@ -60,7 +60,7 @@ function getUser(id: string): Promise<Nullable<UserType>> {
 
 function addSocialMedia(
   _id: string,
-  type: 'website' | 'twitter' | 'instagram',
+  type: 'website' | 'twitter' | 'instagram' | 'facebook',
   value: string
 ): Promise<Nullable<UserType>> {
   const setObj: Record<string, string> = {};

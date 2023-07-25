@@ -24,8 +24,9 @@ const UserSchema = new Schema<UserType>(
     socialMedia: {
       type: {
         twitter: String,
-        instagram: String,
-        website: String
+        website: String,
+        facebook: String,
+        instagram: String
       },
       required: false
     }

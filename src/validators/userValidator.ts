@@ -17,7 +17,7 @@ const userLogin = z.object({
 });
 
 const userSocialUpdate = z.object({
-  type: z.enum(['twitter', 'instagram', 'website']),
+  type: z.enum(['twitter', 'instagram', 'facebook', 'website']),
   value: z.string().url()
 });
 

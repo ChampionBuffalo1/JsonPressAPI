@@ -12,6 +12,7 @@ export type UserType = {
   socialMedia: Partial<{
     twitter: string;
     website: string;
+    facebook: string;
     instagram: string;
   }>;
   role?: 'admin' | 'manager' | 'normal';
