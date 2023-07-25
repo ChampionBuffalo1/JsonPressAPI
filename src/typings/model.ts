@@ -14,7 +14,7 @@ export type UserType = {
     website: string;
     instagram: string;
   }>;
-  role?: 'admin' | 'manager'; // If role isn't present then its a normal user
+  role?: 'admin' | 'manager' | 'normal';
   createdAt: Date;
   updatedAt: Date;
 } & MongoId;
