@@ -77,6 +77,7 @@ function addSocialMedia(
         name: true,
         socialMedia: true
       },
+      new: true,
       lean: true
     }
   );
