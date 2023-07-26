@@ -22,10 +22,10 @@ export type UserType = {
 } & MongoId;
 
 export type BlogType = {
-  name: string;
+  title: string;
   slug: string;
   views: Number;
-  content: Record<string, unknown>;
+  content: Record<string, unknown>[];
   category: string;
   author: UserType;
   lastEditedAt: Date;
