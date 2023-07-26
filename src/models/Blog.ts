@@ -1,4 +1,3 @@
-import User from './User';
 import { Schema, model } from 'mongoose';
 import { BlogType } from '../typings/model';
 
@@ -20,7 +19,7 @@ const BlogSchema = new Schema<BlogType>({
     required: [true, 'blog slug is required']
   },
   author: {
-    type: User,
+    type: String,
     required: [true, 'blog author is required']
   },
   isPublished: {
