@@ -21,4 +21,8 @@ const userSocialUpdate = z.object({
   value: z.string().url()
 });
 
-export { userLogin, userCreate, userPassSchema, userSocialUpdate };
+const userImageUpdate = z.object({
+  image: z.string()
+});
+
+export { userLogin, userCreate, userPassSchema, userSocialUpdate, userImageUpdate };
