@@ -2,10 +2,10 @@ import bcrypt from 'bcrypt';
 import { Router } from 'express';
 import passport from 'passport';
 import User from '../../models/User';
-import { generateJwtToken, getZodError } from '../../lib';
 import { UserType } from '../../typings/model';
 import { bcryptRounds } from '../../Constants';
-import { isAllowedToCreate, isLoggedIn } from '../../middleware/authorized';
+import { generateJwtToken, getZodError } from '../../lib';
+import { isManager, isLoggedIn } from '../../middleware/authorized';
 import { userCreate, userImageUpdate, userLogin, userPassSchema, userSocialUpdate } from '../../validators';
 import {
   getUser,
@@ -43,7 +43,7 @@ userRouter.post('/login', async (req, res) => {
       return;
     }
     res.status(401).send({
-      error: 'Wrong password'
+      message: 'Wrong password'
     });
   } else {
     res.status(406).send(schema.error);
@@ -68,6 +68,12 @@ userRouter.get('/', isLoggedIn, async (req, res) => {
 
 userRouter.get('/getUser/:id', async (req, res) => {
   const id = req.params.id;
+  if (!id) {
+    res.status(400).send({
+      message: 'No id provided'
+    });
+    return;
+  }
   const user = await getUser(id, 'name role image socialMedia');
   if (!user) {
     res.status(404).send({
@@ -95,7 +101,7 @@ userRouter.get('/getRole', isLoggedIn, async (req, res) => {
   });
 });
 
-userRouter.post('/create', isLoggedIn, isAllowedToCreate, async (req, res) => {
+userRouter.post('/create', isLoggedIn, isManager, async (req, res) => {
   const schema = await userCreate.spa(req.body);
   if (schema.success) {
     const { email, name, password } = schema.data;
@@ -117,7 +123,7 @@ userRouter.post('/create', isLoggedIn, isAllowedToCreate, async (req, res) => {
       // @ts-ignore: Code is attached to the error
       if ((err as Error).code === 11000) {
         res.status(400).send({
-          error: 'Email already exists'
+          message: 'Email already exists'
         });
       }
     }
@@ -134,14 +140,14 @@ userRouter.post('/changePassword', isLoggedIn, async (req, res) => {
     const user = await getUser(id, 'passwordHash');
     if (!user) {
       res.status(404).send({
-        error: 'User not found'
+        message: 'User not found'
       });
       return;
     }
     const valid = await bcrypt.compare(oldpassword, user.passwordHash);
     if (!valid) {
       res.status(401).send({
-        error: 'Wrong password'
+        message: 'Wrong password'
       });
       return;
     }
