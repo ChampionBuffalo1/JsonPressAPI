@@ -1,9 +1,8 @@
 import bcrypt from 'bcrypt';
 import { Router } from 'express';
 import passport from 'passport';
-import type { ZodIssue } from 'zod';
 import User from '../../models/User';
-import { generateJwtToken } from '../../lib';
+import { generateJwtToken, getZodError } from '../../lib';
 import { UserType } from '../../typings/model';
 import { bcryptRounds } from '../../Constants';
 import { isAllowedToCreate, isLoggedIn } from '../../middleware/authorized';
@@ -52,6 +51,49 @@ userRouter.post('/login', async (req, res) => {
 });
 
 userRouter.use(passport.authenticate('jwt', { session: false }));
+
+userRouter.get('/', isLoggedIn, async (req, res) => {
+  const id = (req.user as UserType)?._id.toString();
+  const user = await getUser(id, 'name role image socialMedia');
+  if (!user) {
+    res.status(404).send({
+      message: 'User not found'
+    });
+    return;
+  }
+  res.status(200).send({
+    user
+  });
+});
+
+userRouter.get('/getUser/:id', async (req, res) => {
+  const id = req.params.id;
+  const user = await getUser(id, 'name role image socialMedia');
+  if (!user) {
+    res.status(404).send({
+      message: 'User not found'
+    });
+    return;
+  }
+  res.send({
+    user
+  });
+});
+
+userRouter.get('/getRole', isLoggedIn, async (req, res) => {
+  const id = (req.user as UserType)?._id.toString();
+  const user = await getUser(id, 'role');
+  if (!user) {
+    res.status(404).send({
+      message: 'User not found'
+    });
+    return;
+  }
+
+  res.status(200).send({
+    role: user.role
+  });
+});
 
 userRouter.post('/create', isLoggedIn, isAllowedToCreate, async (req, res) => {
   const schema = await userCreate.spa(req.body);
@@ -117,20 +159,6 @@ userRouter.post('/changePassword', isLoggedIn, async (req, res) => {
     const error = getZodError(schema.error.issues);
     res.status(400).json({ error });
   }
-});
-
-userRouter.get('/', isLoggedIn, async (req, res) => {
-  const id = (req.user as UserType)?._id.toString();
-  const user = await getUser(id, 'name role image socialMedia');
-  if (!user) {
-    res.status(404).send({
-      message: 'User not found'
-    });
-    return;
-  }
-  res.status(200).send({
-    user
-  });
 });
 
 userRouter.post('/changeImage', isLoggedIn, async (req, res) => {
@@ -212,13 +240,3 @@ userRouter.post('/delete', isLoggedIn, async (req, res) => {
 });
 
 export default userRouter;
-
-function getZodError(issues: ZodIssue[]) {
-  const errorMessages: Record<string, string> = {};
-  for (const issue of issues) {
-    if (issue.path) {
-      errorMessages[issue.path.join('.')] = issue.message;
-    }
-  }
-  return errorMessages;
-}
