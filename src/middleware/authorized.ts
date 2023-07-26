@@ -9,7 +9,7 @@ function isLoggedIn(req: Request, res: Response, next: NextFunction) {
   });
 }
 
-function isAllowedToCreate(req: Request, res: Response, next: NextFunction) {
+function isManager(req: Request, res: Response, next: NextFunction) {
   if (
     req.isAuthenticated() &&
     ((req.user as UserType)?.role === 'admin' || (req.user as UserType)?.role === 'manager')
@@ -22,4 +22,4 @@ function isAllowedToCreate(req: Request, res: Response, next: NextFunction) {
   });
 }
 
-export { isLoggedIn, isAllowedToCreate };
+export { isLoggedIn, isManager };
