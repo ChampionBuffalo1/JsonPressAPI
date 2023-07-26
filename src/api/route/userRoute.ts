@@ -7,8 +7,15 @@ import { generateJwtToken } from '../../lib';
 import { UserType } from '../../typings/model';
 import { bcryptRounds } from '../../Constants';
 import { isAllowedToCreate, isLoggedIn } from '../../middleware/authorized';
-import { addSocialMedia, createUser, getUser, getUserByEmail } from '../../controller/userController';
-import { userCreate, userLogin, userPassSchema, userSocialUpdate } from '../../validators';
+import { userCreate, userImageUpdate, userLogin, userPassSchema, userSocialUpdate } from '../../validators';
+import {
+  getUser,
+  addImage,
+  userExists,
+  createUser,
+  addSocialMedia,
+  getUserByEmail
+} from '../../controller/userController';
 
 const userRouter = Router();
 
@@ -82,7 +89,7 @@ userRouter.post('/changePassword', isLoggedIn, async (req, res) => {
   if (schema.success) {
     const id = (req.user as UserType)?._id.toString();
     const { password, oldpassword } = schema.data;
-    const user = await getUser(id);
+    const user = await getUser(id, 'passwordHash');
     if (!user) {
       res.status(404).send({
         error: 'User not found'
@@ -114,7 +121,7 @@ userRouter.post('/changePassword', isLoggedIn, async (req, res) => {
 
 userRouter.get('/', isLoggedIn, async (req, res) => {
   const id = (req.user as UserType)?._id.toString();
-  const user = await getUser(id);
+  const user = await getUser(id, 'name role image socialMedia');
   if (!user) {
     res.status(404).send({
       message: 'User not found'
@@ -122,13 +129,30 @@ userRouter.get('/', isLoggedIn, async (req, res) => {
     return;
   }
   res.status(200).send({
-    user: {
-      role: user.role,
-      name: user.name,
-      image: user.image,
-      email: user.email,
-      socialMedia: user.socialMedia
-    }
+    user
+  });
+});
+
+userRouter.post('/changeImage', isLoggedIn, async (req, res) => {
+  const id = (req.user as UserType)?._id.toString();
+  const schema = await userImageUpdate.spa(req.body);
+  if (!schema.success) {
+    const error = getZodError(schema.error.issues);
+    res.status(400).send({
+      error
+    });
+    return;
+  }
+  const { image } = schema.data;
+  const user = await addImage(id, image);
+  if (!user) {
+    res.status(500).send({
+      message: 'Something went wrong'
+    });
+    return;
+  }
+  res.status(200).send({
+    user
   });
 });
 
@@ -143,7 +167,7 @@ userRouter.post('/addSocial', isLoggedIn, async (req, res) => {
     return;
   }
   const { type, value } = schema.data;
-  const user = await getUser(id);
+  const user = await userExists(id);
   if (!user) {
     res.status(404).send({
       message: 'User not found'
@@ -168,9 +192,9 @@ userRouter.post('/delete', isLoggedIn, async (req, res) => {
     res.status(400).send('No id provided');
     return;
   }
-  const user = await getUser(id);
+  const user = await userExists(id);
   if (!user) {
-    res.status(404).send('User not found');
+    res.status(404).send('No user found');
     return;
   }
   const deleted = await User.deleteOne({

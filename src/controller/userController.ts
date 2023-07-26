@@ -34,24 +34,24 @@ function deleteUser(id: string): Promise<Nullable<UserType>> {
   );
 }
 
-function getUserByEmail(email: string): Promise<Nullable<UserType>> {
+function getUserByEmail(email: string, projection?: string): Promise<Nullable<UserType>> {
   return User.findOne(
     {
       email
     },
-    null,
+    projection,
     {
       lean: true
     }
   );
 }
 
-function getUser(id: string): Promise<Nullable<UserType>> {
+function getUser(id: string, projection?: string): Promise<Nullable<UserType>> {
   return User.findById(
     {
       _id: id
     },
-    null,
+    projection,
     {
       lean: true
     }
@@ -83,4 +83,33 @@ function addSocialMedia(
   );
 }
 
-export { createUser, editUser, deleteUser, getUser, getUserByEmail, addSocialMedia };
+function addImage(_id: string, image: string): Promise<Nullable<UserType>> {
+  return User.findByIdAndUpdate(
+    {
+      _id
+    },
+    {
+      $set: {
+        image
+      }
+    },
+    {
+      projection: {
+        name: true,
+        image: true
+      },
+      new: true,
+      lean: true
+    }
+  );
+}
+
+async function userExists(_id: string): Promise<boolean> {
+  return !!(
+    await User.exists({
+      _id
+    })
+  )?._id;
+}
+
+export { createUser, editUser, deleteUser, getUser, userExists, getUserByEmail, addSocialMedia, addImage };
