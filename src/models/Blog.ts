@@ -2,9 +2,9 @@ import { Schema, model } from 'mongoose';
 import { BlogType } from '../typings/model';
 
 const BlogSchema = new Schema<BlogType>({
-  name: {
+  title: {
     type: String,
-    required: [true, 'name is required']
+    required: [true, 'title is required']
   },
   content: {
     type: Schema.Types.Mixed,
@@ -12,15 +12,17 @@ const BlogSchema = new Schema<BlogType>({
   },
   coverImage: {
     type: String,
-    required: [true, 'coverImage is required']
+    required: false
   },
   slug: {
     type: String,
+    unique: true,
     required: [true, 'blog slug is required']
   },
   author: {
-    type: String,
-    required: [true, 'blog author is required']
+    ref: 'User',
+    type: Schema.Types.ObjectId,
+    required: [true, 'author is required']
   },
   isPublished: {
     type: Boolean,
@@ -30,7 +32,10 @@ const BlogSchema = new Schema<BlogType>({
     type: Number,
     default: 0
   },
-  category: String,
+  category: {
+    type: String,
+    required: true
+  },
   lastEditedAt: {
     type: Date,
     required: true
