@@ -31,7 +31,7 @@ userRouter.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (valid) {
       res.status(200).send({
-        token: generateJwtToken(user._id.toString()),
+        token: generateJwtToken(user.id),
         user: {
           role: user.role,
           name: user.name,
@@ -53,7 +53,7 @@ userRouter.post('/login', async (req, res) => {
 userRouter.use(passport.authenticate('jwt', { session: false }));
 
 userRouter.get('/', isLoggedIn, async (req, res) => {
-  const id = (req.user as UserType)?._id.toString();
+  const id = (req.user as UserType)?.id;
   const user = await getUser(id, 'name role image socialMedia');
   if (!user) {
     res.status(404).send({
@@ -87,7 +87,7 @@ userRouter.get('/getUser/:id', async (req, res) => {
 });
 
 userRouter.get('/getRole', isLoggedIn, async (req, res) => {
-  const id = (req.user as UserType)?._id.toString();
+  const id = (req.user as UserType)?.id;
   const user = await getUser(id, 'role');
   if (!user) {
     res.status(404).send({
@@ -108,7 +108,7 @@ userRouter.post('/create', isLoggedIn, isManager, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, bcryptRounds);
     try {
       const created = await createUser(name, email, passwordHash);
-      const token = generateJwtToken(created._id.toString());
+      const token = generateJwtToken(created.id);
       res.status(201).send({
         user: {
           role: created.role,
@@ -135,7 +135,7 @@ userRouter.post('/create', isLoggedIn, isManager, async (req, res) => {
 userRouter.post('/changePassword', isLoggedIn, async (req, res) => {
   const schema = await userPassSchema.spa(req.body);
   if (schema.success) {
-    const id = (req.user as UserType)?._id.toString();
+    const id = (req.user as UserType)?.id;
     const { password, oldpassword } = schema.data;
     const user = await getUser(id, 'passwordHash');
     if (!user) {
@@ -168,7 +168,7 @@ userRouter.post('/changePassword', isLoggedIn, async (req, res) => {
 });
 
 userRouter.post('/changeImage', isLoggedIn, async (req, res) => {
-  const id = (req.user as UserType)?._id.toString();
+  const id = (req.user as UserType)?.id;
   const schema = await userImageUpdate.spa(req.body);
   if (!schema.success) {
     const error = getZodError(schema.error.issues);
@@ -191,7 +191,7 @@ userRouter.post('/changeImage', isLoggedIn, async (req, res) => {
 });
 
 userRouter.post('/addSocial', isLoggedIn, async (req, res) => {
-  const id = (req.user as UserType)?._id.toString();
+  const id = (req.user as UserType)?.id;
   const schema = await userSocialUpdate.spa(req.body);
   if (!schema.success) {
     const error = getZodError(schema.error.issues);
@@ -221,7 +221,7 @@ userRouter.post('/addSocial', isLoggedIn, async (req, res) => {
 });
 
 userRouter.post('/delete', isLoggedIn, async (req, res) => {
-  const id = (req.user as UserType)?._id.toString();
+  const id = (req.user as UserType)?.id;
   if (!id) {
     res.status(400).send('No id provided');
     return;
