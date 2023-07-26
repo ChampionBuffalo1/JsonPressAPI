@@ -24,7 +24,7 @@ export type BlogType = {
   name: string;
   slug: string;
   views: Number;
-  content: string;
+  content: Record<string, unknown>;
   category: string;
   author: UserType;
   lastEditedAt: Date;

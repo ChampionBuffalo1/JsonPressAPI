@@ -8,7 +8,7 @@ const BlogSchema = new Schema<BlogType>({
     required: [true, 'name is required']
   },
   content: {
-    type: String,
+    type: Schema.Types.Mixed,
     required: [true, 'content is required']
   },
   coverImage: {
