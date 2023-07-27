@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { Router } from 'express';
 import passport from 'passport';
 import User from '../../models/User';
+import type { Error } from 'mongoose';
 import { UserType } from '../../typings/model';
 import { bcryptRounds } from '../../Constants';
 import { generateJwtToken, getZodError } from '../../lib';
@@ -120,8 +121,7 @@ userRouter.post('/create', isLoggedIn, isManager, async (req, res) => {
         token
       });
     } catch (err) {
-      // @ts-ignore: Code is attached to the error
-      if ((err as Error).code === 11000) {
+      if ((err as Error).message.startsWith('E11000')) {
         res.status(400).send({
           message: 'Email already exists'
         });
