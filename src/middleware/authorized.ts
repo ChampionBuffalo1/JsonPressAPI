@@ -5,7 +5,7 @@ function isLoggedIn(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated()) return next();
 
   res.status(401).send({
-    error: 'You are not logged in'
+    message: 'You are not logged in'
   });
 }
 
@@ -18,7 +18,7 @@ function isManager(req: Request, res: Response, next: NextFunction) {
   }
 
   res.status(401).send({
-    error: 'You cannot create another user'
+    message: 'User must be admin or manager to perform this action'
   });
 }
 
