@@ -1,6 +1,7 @@
 import Blog from '../models/Blog';
 import { BlogType } from '../typings/model';
 import { Nullable } from '../typings/reset';
+import { updateSchema } from '../validators/blogValidator';
 
 const projection = '-passwordHash -email -__v';
 
@@ -9,13 +10,15 @@ function createBlog(
   slug: string,
   authorId: string,
   category: string,
-  content: Record<string, unknown>[]
+  content: Record<string, unknown>[],
+  coverImage?: string
 ): Promise<BlogType> {
   const blog = new Blog({
     slug,
     title,
     content,
     category,
+    coverImage,
     author: authorId,
     isPublished: false,
     lastEditedAt: new Date()
@@ -23,18 +26,15 @@ function createBlog(
   return blog.save();
 }
 
-function updateBlog(
-  _id: string,
-  key: 'content' | 'title' | 'slug' | 'coverImage',
-  value: any
-): Promise<Nullable<BlogType>> {
+function updateBlog(_id: string, data: updateSchema): Promise<Nullable<BlogType>> {
   return Blog.findOneAndUpdate(
     {
       _id
     },
     {
       $set: {
-        [key]: value,
+        ...data,
+        isPublished: false,
         lastEditedAt: new Date()
       }
     },
@@ -46,22 +46,20 @@ function updateBlog(
     .exec();
 }
 
-function deleteBlog(id: string): Promise<Nullable<BlogType>> {
-  return Blog.findOneAndDelete(
-    {
-      _id: id
-    },
-    {
-      new: true
-    }
-  )
+function deleteBlog(slug: string, id?: string): Promise<Nullable<BlogType>> {
+  const query: Record<string, string> = { slug };
+  // if id isn't provided, and this fn is called that it means that the user was admin/manager
+  if (id) query['author'] = id;
+  return Blog.findOneAndDelete(query, {
+    new: true
+  })
     .populate('author', projection)
     .exec();
 }
-function publishBlog(id: string): Promise<Nullable<BlogType>> {
+function publishBlog(slug: string): Promise<Nullable<BlogType>> {
   return Blog.findOneAndUpdate(
     {
-      _id: id
+      slug
     },
     {
       $set: {
@@ -76,8 +74,17 @@ function publishBlog(id: string): Promise<Nullable<BlogType>> {
     .exec();
 }
 
-function getAllBlogs(): Promise<BlogType[]> {
-  return Blog.find({}, null, { lean: true }).populate('author', projection).exec();
+function getAllBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
+  const query = Blog.find(
+    {
+      isPublished: true
+    },
+    null,
+    { lean: true }
+  ).populate('author', projection);
+  if (skip && skip > 0) query.skip(skip);
+  if (limit) query.limit(limit);
+  return query.exec();
 }
 
 async function getBlogById(id: string): Promise<Nullable<BlogType>> {
@@ -98,7 +105,8 @@ async function getBlogById(id: string): Promise<Nullable<BlogType>> {
 function getBlogByCategory(category: string, limit?: number): Promise<BlogType[]> {
   return Blog.find(
     {
-      category
+      category,
+      isPublished: true
     },
     null,
     {
@@ -110,12 +118,18 @@ function getBlogByCategory(category: string, limit?: number): Promise<BlogType[]
 }
 
 function getPopularBlogs(limit?: number): Promise<BlogType[]> {
-  return Blog.find({}, null, {
-    sort: {
-      views: -1
+  return Blog.find(
+    {
+      isPublished: true
     },
-    limit: limit || -1
-  })
+    null,
+    {
+      sort: {
+        views: -1
+      },
+      limit: limit || -1
+    }
+  )
     .populate('author', projection)
     .exec();
 }
@@ -123,7 +137,8 @@ function getPopularBlogs(limit?: number): Promise<BlogType[]> {
 function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
   return Blog.findOne(
     {
-      slug
+      slug,
+      isPublished: true
     },
     null,
     {
@@ -135,7 +150,23 @@ function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
 }
 
 function getAllUniqueCategory(): Promise<string[]> {
-  return Blog.find().distinct('category').exec();
+  return Blog.find({
+    isPublished: true
+  })
+    .distinct('category')
+    .exec();
+}
+
+function deleteAllBlogs(category?: string): Promise<Awaited<ReturnType<typeof Blog.deleteMany>>> {
+  return Blog.deleteMany(category ? { category } : {}).exec();
+}
+
+function getUnpublishedBlogs() {
+  return Blog.find({
+    isPublished: false
+  })
+    .populate('author', projection)
+    .exec();
 }
 
 export {
@@ -146,7 +177,9 @@ export {
   getBlogById,
   getAllBlogs,
   getBlogBySlug,
+  deleteAllBlogs,
   getPopularBlogs,
   getBlogByCategory,
+  getUnpublishedBlogs,
   getAllUniqueCategory
 };
