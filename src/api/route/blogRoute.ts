@@ -80,7 +80,7 @@ blogRouter.post('/create', isLoggedIn, async (req, res) => {
   const id = (req.user as UserType).id;
   const { category, content, slug, title } = schema.data;
   try {
-    const blog = await createBlog(title, slug, id, category, content, schema.data.coverImage);
+    const blog = await createBlog(title, slug, id, category, content, schema.data.coverImage, schema.data.description);
     res.status(200).json({ blog });
   } catch (err) {
     if ((err as Error.ValidationError).message.startsWith('E11000')) {
