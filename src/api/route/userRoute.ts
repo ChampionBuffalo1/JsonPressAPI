@@ -111,7 +111,6 @@ userRouter.post('/create', isLoggedIn, isManager, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, bcryptRounds);
     try {
       const created = await createUser(name, email, passwordHash);
-      const token = generateJwtToken(created.id);
       res.status(201).send({
         user: {
           role: created.role,
@@ -119,8 +118,7 @@ userRouter.post('/create', isLoggedIn, isManager, async (req, res) => {
           image: created.image,
           email: created.email,
           socialMedia: created.socialMedia
-        },
-        token
+        }
       });
     } catch (err) {
       if ((err as Error).message.startsWith('E11000')) {
