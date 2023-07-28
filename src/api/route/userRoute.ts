@@ -44,7 +44,9 @@ userRouter.post('/login', async (req, res) => {
       return;
     }
     res.status(401).send({
-      message: 'Wrong password'
+      message: {
+        password: 'Wrong email or password'
+      }
     });
   } else {
     res.status(406).send({
@@ -123,7 +125,9 @@ userRouter.post('/create', isLoggedIn, isManager, async (req, res) => {
     } catch (err) {
       if ((err as Error).message.startsWith('E11000')) {
         res.status(400).send({
-          message: 'Email already exists'
+          message: {
+            email: 'Email already exists'
+          }
         });
       }
     }
@@ -149,7 +153,9 @@ userRouter.post('/changePassword', isLoggedIn, async (req, res) => {
     const valid = await bcrypt.compare(oldpassword, user.passwordHash);
     if (!valid) {
       res.status(401).send({
-        message: 'Wrong password'
+        message: {
+          password: 'Wrong password'
+        }
       });
       return;
     }
