@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import type { ZodIssue } from 'zod';
+import type { ZodError } from 'zod';
 import { JwtSecret } from '../Constants';
 
 function generateJwtToken(id: string, expiresIn?: string): string {
@@ -7,14 +7,17 @@ function generateJwtToken(id: string, expiresIn?: string): string {
   return jwt.sign(payload, JwtSecret, expiresIn ? { expiresIn } : {});
 }
 
-function getZodError(issues: ZodIssue[]) {
+function getZodError(error: ZodError) {
+  const errors = error.errors;
   const errorMessages: Record<string, string> = {};
-  for (const issue of issues) {
-    if (issue.path) {
-      errorMessages[issue.path.join('.')] = issue.message;
-    }
+  for (const err of errors) {
+    errorMessages[err.path.join('.')] = err.message;
   }
   return errorMessages;
 }
 
-export { generateJwtToken, getZodError };
+function getRangeError(field: string, min?: number, max?: number) {
+  return `${field} must be greater than ${min} and less than ${max}`;
+}
+
+export { generateJwtToken, getZodError, getRangeError };

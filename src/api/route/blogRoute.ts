@@ -15,7 +15,7 @@ import {
   deleteAllBlogs,
   getPopularBlogs,
   getBlogByCategory,
-  getAllUniqueCategory,
+  getAllUniqueCategory
 } from '../../controller/blogController';
 
 const blogRouter = Router();
@@ -73,7 +73,7 @@ blogRouter.post('/create', isLoggedIn, async (req, res) => {
   const schema = await createSchema.spa(req.body);
   if (!schema.success) {
     res.status(401).json({
-      message: getZodError(schema.error.issues)
+      message: getZodError(schema.error)
     });
     return;
   }
@@ -100,7 +100,7 @@ blogRouter.post('/update/:slug', isLoggedIn, async (req, res) => {
   const schema = await updateSchema.spa(req.body);
   if (!schema.success) {
     res.status(401).json({
-      message: getZodError(schema.error.issues)
+      message: getZodError(schema.error)
     });
     return;
   }

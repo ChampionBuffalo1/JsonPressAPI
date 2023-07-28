@@ -25,7 +25,7 @@ userRouter.post('/login', async (req, res) => {
     const { email, password } = schema.data;
     const user = await getUserByEmail(email);
     if (!user) {
-      res.status(404).send('User not found');
+      res.status(404).json({ message: 'User not found' });
       return;
     }
 
@@ -47,7 +47,9 @@ userRouter.post('/login', async (req, res) => {
       message: 'Wrong password'
     });
   } else {
-    res.status(406).send(schema.error);
+    res.status(406).send({
+      message: getZodError(schema.error)
+    });
   }
 });
 
@@ -128,7 +130,9 @@ userRouter.post('/create', isLoggedIn, isManager, async (req, res) => {
       }
     }
   } else {
-    res.status(406).send(schema.error);
+    res.status(406).send({
+      message: getZodError(schema.error)
+    });
   }
 });
 
@@ -162,8 +166,8 @@ userRouter.post('/changePassword', isLoggedIn, async (req, res) => {
       message: 'Password changed'
     });
   } else {
-    const error = getZodError(schema.error.issues);
-    res.status(400).json({ error });
+    const message = getZodError(schema.error);
+    res.status(400).json({ message });
   }
 });
 
@@ -171,9 +175,9 @@ userRouter.post('/changeImage', isLoggedIn, async (req, res) => {
   const id = (req.user as UserType)?.id;
   const schema = await userImageUpdate.spa(req.body);
   if (!schema.success) {
-    const error = getZodError(schema.error.issues);
+    const message = getZodError(schema.error);
     res.status(400).send({
-      error
+      message
     });
     return;
   }
@@ -194,9 +198,9 @@ userRouter.post('/addSocial', isLoggedIn, async (req, res) => {
   const id = (req.user as UserType)?.id;
   const schema = await userSocialUpdate.spa(req.body);
   if (!schema.success) {
-    const error = getZodError(schema.error.issues);
+    const message = getZodError(schema.error);
     res.status(400).send({
-      error
+      message
     });
     return;
   }
