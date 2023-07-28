@@ -31,6 +31,7 @@ export type BlogType = {
   lastEditedAt: Date;
   coverImage?: string;
   isPublished: boolean;
+  description?: string;
 
   createdAt: Date;
 } & MongoId;

@@ -10,14 +10,19 @@ const BlogSchema = new Schema<BlogType>({
     type: Schema.Types.Mixed,
     required: [true, 'content is required']
   },
+  description: {
+    type: String,
+    required: false
+  },
   coverImage: {
     type: String,
     required: false
   },
   slug: {
     type: String,
+    index: true,
     unique: true,
-    required: [true, 'blog slug is required']
+    required: [true, 'slug is required']
   },
   author: {
     ref: 'User',

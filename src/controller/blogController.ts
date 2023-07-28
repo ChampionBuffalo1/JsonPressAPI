@@ -11,7 +11,8 @@ function createBlog(
   authorId: string,
   category: string,
   content: Record<string, unknown>[],
-  coverImage?: string
+  coverImage?: string,
+  description?: string
 ): Promise<BlogType> {
   const blog = new Blog({
     slug,
@@ -19,6 +20,7 @@ function createBlog(
     content,
     category,
     coverImage,
+    description,
     author: authorId,
     isPublished: false,
     lastEditedAt: new Date()
@@ -79,7 +81,7 @@ function getAllBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
     {
       isPublished: true
     },
-    null,
+    '-content -__v',
     { lean: true }
   ).populate('author', projection);
   if (skip && skip > 0) query.skip(skip);
@@ -102,23 +104,21 @@ async function getBlogById(id: string): Promise<Nullable<BlogType>> {
   return blog;
 }
 
-function getBlogByCategory(category: string, limit?: number): Promise<BlogType[]> {
-  return Blog.find(
+function getBlogByCategory(category: string, limit?: number, skip?: number): Promise<BlogType[]> {
+  const query = Blog.find(
     {
       category,
       isPublished: true
     },
-    null,
-    {
-      limit
-    }
-  )
-    .populate('author', projection)
-    .exec();
+    null
+  ).populate('author', projection);
+  if (skip && skip > 0) query.skip(skip);
+  if (limit) query.limit(limit);
+  return query.exec();
 }
 
-function getPopularBlogs(limit?: number): Promise<BlogType[]> {
-  return Blog.find(
+function getPopularBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
+  const query = Blog.find(
     {
       isPublished: true
     },
@@ -126,12 +126,12 @@ function getPopularBlogs(limit?: number): Promise<BlogType[]> {
     {
       sort: {
         views: -1
-      },
-      limit: limit || -1
+      }
     }
-  )
-    .populate('author', projection)
-    .exec();
+  ).populate('author', projection);
+  if (skip && skip > 0) query.skip(skip);
+  if (limit) query.limit(limit);
+  return query.exec();
 }
 
 function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
