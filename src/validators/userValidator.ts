@@ -1,25 +1,23 @@
 import { z } from 'zod';
-import { getRangeError } from '../lib';
+import { getMaxRangeError, getMinRangeError } from '../lib';
 
-const passwordError = getRangeError('password', 8, 100);
+const minPass = getMinRangeError('Password', 8),
+  maxPass = getMaxRangeError('Password', 100);
 
 const userCreate = z.object({
   email: z.string().email('Invalid email'),
-  name: z.string().min(3).max(100, 'Name must be greater than 3 and less than 100'),
-  password: z.string().min(8).max(100, passwordError)
+  name: z.string().min(3, getMinRangeError('Name', 3)).max(100, getMaxRangeError('Name', 100)),
+  password: z.string().min(8, minPass).max(100, maxPass)
 });
 
 const userPassSchema = z.object({
-  password: z.string().min(8).max(100, passwordError),
-  oldpassword: z
-    .string()
-    .min(8)
-    .max(100, getRangeError('oldpassword', 8, 100))
+  password: z.string().min(8, minPass).max(100, maxPass),
+  oldpassword: z.string().min(8, getMinRangeError('Old Password', 8)).max(100, getMaxRangeError('Old Password', 100))
 });
 
 const userLogin = z.object({
   email: z.string().email(),
-  password: z.string().min(8).max(100, passwordError)
+  password: z.string().min(8, minPass).max(100, maxPass)
 });
 
 const userSocialUpdate = z.object({

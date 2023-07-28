@@ -16,8 +16,11 @@ function getZodError(error: ZodError) {
   return errorMessages;
 }
 
-function getRangeError(field: string, min?: number, max?: number) {
-  return `${field} must be greater than ${min} and less than ${max}`;
+function getMinRangeError(field: string, min: number) {
+  return `${field} must be greater than ${min}`;
+}
+function getMaxRangeError(field: string, max: number) {
+  return `${field} must contain less than ${max} letter`;
 }
 
-export { generateJwtToken, getZodError, getRangeError };
+export { generateJwtToken, getZodError, getMinRangeError, getMaxRangeError };
