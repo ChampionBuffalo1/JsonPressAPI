@@ -21,14 +21,14 @@ import {
 const blogRouter = Router();
 
 blogRouter.get('/getAll', async (req, res) => {
-  const limit = req.query.limit ? parseInt(req.query.limit as string) : 0;
-  const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
+  const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : undefined;
+  const skip = typeof req.query.skip === 'string' ? parseInt(req.query.skip) : undefined;
   const blogs = await getAllBlogs(limit, skip);
   res.status(200).json({ blogs });
 });
 
 blogRouter.get('/getPopular', async (req, res) => {
-  const limit = req.query.limit ? parseInt(req.query.limit as string) : -1;
+  const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : undefined;
   const blogs = await getPopularBlogs(limit);
   res.status(200).json({
     blogs
@@ -52,8 +52,8 @@ blogRouter.get('/getAllCategory', async (_, res) => {
 });
 
 blogRouter.get('/slug', async (req, res) => {
-  const slug = req.query.query as string;
-  if (!slug) {
+  const slug = req.query.query;
+  if (!slug || typeof slug !== 'string') {
     res.status(401).json({ message: 'Slug is required' });
     return;
   }
