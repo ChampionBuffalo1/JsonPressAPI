@@ -28,12 +28,12 @@ userRouter.post('/login', async (req, res) => {
       res.status(404).json({ message: 'User not found' });
       return;
     }
-
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (valid) {
       res.status(200).send({
         token: generateJwtToken(user.id),
         user: {
+          id: user.id,
           role: user.role,
           name: user.name,
           image: user.image,
