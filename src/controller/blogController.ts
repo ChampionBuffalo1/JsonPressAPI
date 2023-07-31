@@ -77,13 +77,7 @@ function publishBlog(slug: string): Promise<Nullable<BlogType>> {
 }
 
 function getAllBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
-  const query = Blog.find(
-    {
-      isPublished: true
-    },
-    '-content -__v',
-    { lean: true }
-  ).populate('author', projection);
+  const query = Blog.find({}, '-content -__v', { lean: true }).populate('author', projection);
   if (skip && skip > 0) query.skip(skip);
   if (limit) query.limit(limit);
   return query.exec();
@@ -134,8 +128,8 @@ function getPopularBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
   return query.exec();
 }
 
-function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
-  return Blog.findOne(
+async function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
+  const query = Blog.findOne(
     {
       slug,
       isPublished: true
@@ -144,9 +138,18 @@ function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
     {
       lean: true
     }
-  )
-    .populate('author', projection)
-    .exec();
+  ).populate('author', projection);
+  await Blog.findOneAndUpdate(
+    {
+      slug
+    },
+    {
+      $inc: {
+        views: 1
+      }
+    }
+  );
+  return query.exec();
 }
 
 function getAllUniqueCategory(): Promise<string[]> {
