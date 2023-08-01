@@ -12,7 +12,7 @@ passport.use(
   new JwtStrategy(opts, async (jwt_payload, done) => {
     try {
       if (!jwt_payload.id) return done(null, false);
-      const user = await User.findOne({ id: jwt_payload.id }, '_id role updatedAt');
+      const user = await User.findOne({ _id: jwt_payload.id }, '_id role updatedAt');
       // User object has been changed so the token is no longer valid
       // To tackle the problem where the user has been deleted (or has changed password)
       // and can still use the token to perform actions
