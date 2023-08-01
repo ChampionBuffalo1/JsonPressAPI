@@ -31,9 +31,9 @@ userRouter.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (valid) {
       res.status(200).send({
-        token: generateJwtToken(user.id),
+        token: generateJwtToken(user._id.toString()),
         user: {
-          id: user.id,
+          id: user._id.toString(),
           role: user.role,
           name: user.name,
           image: user.image,
