@@ -77,25 +77,31 @@ function publishBlog(slug: string): Promise<Nullable<BlogType>> {
 }
 
 function getAllBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
-  const query = Blog.find({}, '-content -__v', { lean: true }).populate('author', projection);
+  const query = Blog.find(
+    {
+      isPublished: true
+    },
+    '-content -__v',
+    { lean: true }
+  ).populate('author', projection);
   if (skip && skip > 0) query.skip(skip);
   if (limit) query.limit(limit);
   return query.exec();
 }
 
-async function getBlogById(id: string): Promise<Nullable<BlogType>> {
-  const blog = await Blog.findById(id, null, { lean: true }).populate('author', projection).exec();
-  await Blog.findOneAndUpdate(
+function getUnpublishedBlogsOfUser(id: string): Promise<BlogType[]> {
+  return Blog.find(
     {
-      _id: id
+      author: id,
+      isPublished: false
     },
+    '-content -__v',
     {
-      $inc: {
-        views: 1
-      }
+      lean: true
     }
-  );
-  return blog;
+  )
+    .populate('author', projection)
+    .exec();
 }
 
 function getBlogByCategory(category: string, limit?: number, skip?: number): Promise<BlogType[]> {
@@ -129,16 +135,17 @@ function getPopularBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
 }
 
 async function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
-  const query = Blog.findOne(
+  const blog = Blog.findOne(
     {
-      slug,
-      isPublished: true
+      slug
     },
     null,
     {
       lean: true
     }
-  ).populate('author', projection);
+  )
+    .populate('author', projection)
+    .exec();
   await Blog.findOneAndUpdate(
     {
       slug
@@ -149,7 +156,7 @@ async function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
       }
     }
   );
-  return query.exec();
+  return blog;
 }
 
 function getAllUniqueCategory(): Promise<string[]> {
@@ -164,12 +171,13 @@ function deleteAllBlogs(category?: string): Promise<Awaited<ReturnType<typeof Bl
   return Blog.deleteMany(category ? { category } : {}).exec();
 }
 
-function getUnpublishedBlogs() {
-  return Blog.find({
+function getUnpublishedBlogContent(author?: string, otherCond?: Record<string, unknown>) {
+  const query = Blog.findOne({
+    ...otherCond,
     isPublished: false
-  })
-    .populate('author', projection)
-    .exec();
+  }).populate('author', projection);
+  if (author) query.where('author').equals(author);
+  return query.exec();
 }
 
 export {
@@ -177,12 +185,12 @@ export {
   deleteBlog,
   updateBlog,
   publishBlog,
-  getBlogById,
   getAllBlogs,
   getBlogBySlug,
   deleteAllBlogs,
   getPopularBlogs,
   getBlogByCategory,
-  getUnpublishedBlogs,
-  getAllUniqueCategory
+  getAllUniqueCategory,
+  getUnpublishedBlogContent,
+  getUnpublishedBlogsOfUser
 };
