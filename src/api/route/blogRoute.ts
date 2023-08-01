@@ -15,7 +15,9 @@ import {
   deleteAllBlogs,
   getPopularBlogs,
   getBlogByCategory,
-  getAllUniqueCategory
+  getAllUniqueCategory,
+  getUnpublishedBlogContent,
+  getUnpublishedBlogsOfUser
 } from '../../controller/blogController';
 
 const blogRouter = Router();
@@ -68,6 +70,27 @@ blogRouter.use(
     session: false
   })
 );
+
+blogRouter.get('/getUnpublished', isLoggedIn, async (req, res) => {
+  const blogs = await getUnpublishedBlogsOfUser((req.user as UserType).id);
+  res.status(200).json({
+    blogs
+  });
+});
+
+blogRouter.get('/unpublished/slug', isLoggedIn, async (req, res) => {
+  const slug = req.query.query;
+  if (!slug || typeof slug !== 'string') {
+    res.status(401).json({ message: 'Slug is required' });
+    return;
+  }
+  const blogs = await getUnpublishedBlogContent((req.user as UserType).id, {
+    slug
+  });
+  res.status(200).json({
+    blogs
+  });
+});
 
 blogRouter.post('/create', isLoggedIn, async (req, res) => {
   const schema = await createSchema.spa(req.body);
