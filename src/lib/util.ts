@@ -2,9 +2,8 @@ import jwt from 'jsonwebtoken';
 import type { ZodError } from 'zod';
 import { JwtSecret } from '../Constants';
 
-function generateJwtToken(id: string, expiresIn?: string): string {
-  const payload = { id };
-  return jwt.sign(payload, JwtSecret, expiresIn ? { expiresIn } : {});
+function generateJwtToken(payload: Record<string, string>, expiresIn?: string): string {
+  return jwt.sign(JSON.stringify(payload), JwtSecret, expiresIn ? { expiresIn } : {});
 }
 
 function getZodError(error: ZodError) {
