@@ -1,28 +1,27 @@
 import passport from 'passport';
-import User from '../models/User';
 import { JwtSecret } from '../Constants';
 import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions } from 'passport-jwt';
+import { UserType } from '../typings/model';
 
 const opts: StrategyOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKey: JwtSecret
 };
 
+export type JwtPayload = {
+  id: string;
+  role?: UserType['role'];
+};
+
 passport.use(
-  new JwtStrategy(opts, async (jwt_payload, done) => {
+  new JwtStrategy(opts, async (jwt_payload: JwtPayload, done) => {
     try {
+      console.log(jwt_payload);
       if (!jwt_payload.id) return done(null, false);
-      const user = await User.findOne({ _id: jwt_payload.id }, '_id role updatedAt');
-      // User object has been changed so the token is no longer valid
-      // To tackle the problem where the user has been deleted (or has changed password)
-      // and can still use the token to perform actions
-      // FIXME: This means updating socials or image for the user also invalidates the token
-      if (user?.updatedAt && Date.parse(user.updatedAt.toString()) / 1000 > jwt_payload.iat) return done(null, false);
-      if (user) return done(null, user);
+      return done(null, jwt_payload);
     } catch (err) {
       return done(err, false);
     }
-    return done(null, false);
   })
 );
 
