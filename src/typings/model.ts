@@ -16,7 +16,7 @@ export type UserType = {
     facebook: string;
     instagram: string;
   }>;
-  role?: 'admin' | 'manager' | 'normal';
+  role: 'admin' | 'manager' | 'normal';
   createdAt: Date;
   updatedAt: Date;
 } & MongoId;

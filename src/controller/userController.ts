@@ -5,7 +5,13 @@ import { bcryptRounds } from '../Constants';
 import type { JwtPayload } from '../lib/passport';
 import { generateJwtToken, getZodError } from '../lib';
 import UserQueryHelper from '../models/query/userQueries';
-import { createSchema, loginSchema, passwordSchema, userImageUpdate, userSocialUpdate } from '../validators/userValidator';
+import {
+  loginSchema,
+  createSchema,
+  passwordSchema,
+  userImageUpdate,
+  userSocialUpdate
+} from '../validators/userValidator';
 
 async function userLogin(req: Request, res: Response) {
   const schema = await loginSchema.spa(req.body);
@@ -22,7 +28,6 @@ async function userLogin(req: Request, res: Response) {
       res.status(200).send({
         token: generateJwtToken({
           id: user.id,
-          // @ts-expect-error: role can be undefined somehow?
           role: user.role
         }),
         user: {
@@ -63,17 +68,8 @@ async function getSelf(req: Request, res: Response) {
 }
 
 async function getSelfRole(req: Request, res: Response) {
-  const id = (req.user as JwtPayload)?.id;
-  const user = await UserQueryHelper.getUser(id, 'role');
-  if (!user) {
-    res.status(404).send({
-      message: 'User not found'
-    });
-    return;
-  }
-
   res.status(200).send({
-    role: user.role
+    role: (req.user as JwtPayload).role
   });
 }
 
