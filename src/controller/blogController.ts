@@ -1,196 +1,164 @@
-import Blog from '../models/Blog';
-import { BlogType } from '../typings/model';
-import { Nullable } from '../typings/reset';
-import { updateSchema } from '../validators/blogValidator';
+import { Error } from 'mongoose';
+import { getZodError } from '../lib';
+import { UserType } from '../typings/model';
+import { Request, Response } from 'express';
+import BlogQueryHelper from '../models/query/blogQueries';
+import { createSchema, updateSchema } from '../validators/blogValidator';
 
-const projection = '-passwordHash -email -__v';
+async function getAllBlogs(req: Request, res: Response) {
+  const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : undefined;
+  const skip = typeof req.query.skip === 'string' ? parseInt(req.query.skip) : undefined;
+  const blogs = await BlogQueryHelper.getAllBlogs(limit, skip);
+  res.status(200).json({ blogs });
+}
 
-function createBlog(
-  title: string,
-  slug: string,
-  authorId: string,
-  category: string,
-  content: Record<string, unknown>[],
-  coverImage?: string,
-  description?: string
-): Promise<BlogType> {
-  const blog = new Blog({
-    slug,
-    title,
-    content,
-    category,
-    coverImage,
-    description,
-    author: authorId,
-    isPublished: false,
-    lastEditedAt: new Date()
+async function getPopularBlogs(req: Request, res: Response) {
+  const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : undefined;
+  const skip = typeof req.query.skip === 'string' ? parseInt(req.query.skip) : undefined;
+  const blogs = await BlogQueryHelper.getPopularBlogs(limit, skip);
+  res.status(200).json({
+    blogs
   });
-  return blog.save();
 }
 
-function updateBlog(_id: string, data: updateSchema): Promise<Nullable<BlogType>> {
-  return Blog.findOneAndUpdate(
-    {
-      _id
-    },
-    {
-      $set: {
-        ...data,
-        isPublished: false,
-        lastEditedAt: new Date()
-      }
-    },
-    {
-      new: true
+async function getBlogByCategory(req: Request, res: Response) {
+  const category = req.params.category;
+  if (!category) {
+    res.status(401).json({ message: 'Category is required' });
+    return;
+  }
+  const blogs = await BlogQueryHelper.getBlogByCategory(category);
+  res.status(200).json({});
+  blogs;
+}
+
+async function getAllCategory(_: unknown, res: Response) {
+  const uniqueCategories = await BlogQueryHelper.getAllUniqueCategory();
+  res.status(200).json({ categories: uniqueCategories });
+}
+
+async function getBlogBySlug(req: Request, res: Response) {
+  const slug = req.query.query;
+  if (!slug || typeof slug !== 'string') {
+    res.status(401).json({ message: 'Slug is required' });
+    return;
+  }
+  const blog = await BlogQueryHelper.getBlogBySlug(slug);
+  res.status(200).json({
+    blog
+  });
+}
+async function getUnpublishedBlogs(req: Request, res: Response) {
+  const blogs = await BlogQueryHelper.getUnpublishedBlogsOfUser((req.user as UserType).id);
+  res.status(200).json({
+    blogs
+  });
+}
+
+async function unpublishBlog(req: Request, res: Response) {
+  const slug = req.query.query;
+  if (!slug || typeof slug !== 'string') {
+    res.status(401).json({ message: 'Slug is required' });
+    return;
+  }
+  const blogs = await BlogQueryHelper.getUnpublishedBlogContent((req.user as UserType).id, {
+    slug
+  });
+  res.status(200).json({
+    blogs
+  });
+}
+
+async function createBlog(req: Request, res: Response) {
+  const schema = await createSchema.spa(req.body);
+  if (!schema.success) {
+    res.status(401).json({
+      message: getZodError(schema.error)
+    });
+    return;
+  }
+  const id = (req.user as UserType).id;
+  try {
+    const blog = await BlogQueryHelper.createBlog({
+      ...schema.data,
+      authorId: id
+    });
+    res.status(200).json({ blog });
+  } catch (err) {
+    if ((err as Error.ValidationError).message.startsWith('E11000')) {
+      res.status(401).json({ message: 'Slug already taken' });
+      return;
     }
-  )
-    .populate('author', projection)
-    .exec();
+    res.status(401).json({ message: 'Something went wrong' });
+  }
 }
-
-function deleteBlog(slug: string, id?: string): Promise<Nullable<BlogType>> {
-  const query: Record<string, string> = { slug };
-  // if id isn't provided, and this fn is called that it means that the user was admin/manager
-  if (id) query['author'] = id;
-  return Blog.findOneAndDelete(query, {
-    new: true
-  })
-    .populate('author', projection)
-    .exec();
-}
-function publishBlog(slug: string): Promise<Nullable<BlogType>> {
-  return Blog.findOneAndUpdate(
-    {
-      slug
-    },
-    {
-      $set: {
-        isPublished: true
-      }
-    },
-    {
-      new: true
+async function updateBlog(req: Request, res: Response) {
+  const slug = req.params.slug;
+  if (!slug) {
+    res.status(401).json({ message: 'slug is required' });
+    return;
+  }
+  const schema = await updateSchema.spa(req.body);
+  if (!schema.success) {
+    res.status(401).json({
+      message: getZodError(schema.error)
+    });
+    return;
+  }
+  const id = (req.user as UserType).id;
+  try {
+    const blog = await BlogQueryHelper.updateBlog(id, schema.data);
+    res.status(200).json({ blog });
+  } catch (err) {
+    if ((err as Error.ValidationError).message.startsWith('E11000')) {
+      res.status(401).json({ message: 'Slug already taken' });
+      return;
     }
-  )
-    .populate('author', projection)
-    .exec();
+    res.status(401).json({ message: 'Something went wrong' });
+  }
 }
 
-function getAllBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
-  const query = Blog.find(
-    {
-      isPublished: true
-    },
-    '-content -__v',
-    { lean: true }
-  ).populate('author', projection);
-  if (skip && skip > 0) query.skip(skip);
-  if (limit) query.limit(limit);
-  return query.exec();
+async function publishBlog(req: Request, res: Response) {
+  const slug = req.params.slug;
+  if (!slug) {
+    res.status(401).json({ message: 'slug is required' });
+    return;
+  }
+  const blog = await BlogQueryHelper.publishBlog(slug);
+  if (!blog) {
+    res.status(401).json({ message: 'Blog not found' });
+    return;
+  }
+  res.status(200).json({ published: true });
 }
 
-function getUnpublishedBlogsOfUser(id: string): Promise<BlogType[]> {
-  return Blog.find(
-    {
-      author: id,
-      isPublished: false
-    },
-    '-content -__v',
-    {
-      lean: true
-    }
-  )
-    .populate('author', projection)
-    .exec();
-}
-
-function getBlogByCategory(category: string, limit?: number, skip?: number): Promise<BlogType[]> {
-  const query = Blog.find(
-    {
-      category,
-      isPublished: true
-    },
-    null
-  ).populate('author', projection);
-  if (skip && skip > 0) query.skip(skip);
-  if (limit) query.limit(limit);
-  return query.exec();
-}
-
-function getPopularBlogs(limit?: number, skip?: number): Promise<BlogType[]> {
-  const query = Blog.find(
-    {
-      isPublished: true
-    },
-    null,
-    {
-      sort: {
-        views: -1
-      }
-    }
-  ).populate('author', projection);
-  if (skip && skip > 0) query.skip(skip);
-  if (limit) query.limit(limit);
-  return query.exec();
-}
-
-async function getBlogBySlug(slug: string): Promise<Nullable<BlogType>> {
-  const blog = Blog.findOne(
-    {
-      slug
-    },
-    null,
-    {
-      lean: true
-    }
-  )
-    .populate('author', projection)
-    .exec();
-  await Blog.findOneAndUpdate(
-    {
-      slug
-    },
-    {
-      $inc: {
-        views: 1
-      }
-    }
-  );
-  return blog;
-}
-
-function getAllUniqueCategory(): Promise<string[]> {
-  return Blog.find({
-    isPublished: true
-  })
-    .distinct('category')
-    .exec();
-}
-
-function deleteAllBlogs(category?: string): Promise<Awaited<ReturnType<typeof Blog.deleteMany>>> {
-  return Blog.deleteMany(category ? { category } : {}).exec();
-}
-
-function getUnpublishedBlogContent(author?: string, otherCond?: Record<string, unknown>) {
-  const query = Blog.findOne({
-    ...otherCond,
-    isPublished: false
-  }).populate('author', projection);
-  if (author) query.where('author').equals(author);
-  return query.exec();
+async function deleteBlog(req: Request, res: Response) {
+  const slug = req.query?.slug as string;
+  if (!slug) {
+    res.status(401).json({ message: 'slug is required' });
+    return;
+  }
+  const id = (req.user as UserType).id;
+  const role = (req.user as UserType).role;
+  if (role !== 'normal') {
+    const deleted = await BlogQueryHelper.deleteBlog(slug);
+    res.status(200).json({ deleted });
+  } else {
+    const deleted = await BlogQueryHelper.deleteBlog(slug, id);
+    res.status(200).json({ deleted });
+  }
 }
 
 export {
   createBlog,
-  deleteBlog,
   updateBlog,
+  deleteBlog,
   publishBlog,
   getAllBlogs,
   getBlogBySlug,
-  deleteAllBlogs,
+  unpublishBlog,
+  getAllCategory,
   getPopularBlogs,
   getBlogByCategory,
-  getAllUniqueCategory,
-  getUnpublishedBlogContent,
-  getUnpublishedBlogsOfUser
+  getUnpublishedBlogs
 };
