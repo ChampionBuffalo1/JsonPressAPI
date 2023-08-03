@@ -1,7 +1,7 @@
 import Blog from '../Blog';
 import { BlogType } from '../../typings/model';
 import { Nullable } from '../../typings/reset';
-import { updateSchema } from '../../validators/blogValidator';
+import type { updateSchema } from '../../validators/blogValidator';
 
 const projection = '-passwordHash -email -__v';
 
