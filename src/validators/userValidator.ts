@@ -4,18 +4,18 @@ import { getMaxRangeError, getMinRangeError } from '../lib';
 const minPass = getMinRangeError('Password', 8),
   maxPass = getMaxRangeError('Password', 100);
 
-const userCreate = z.object({
+const createSchema = z.object({
   email: z.string().email('Invalid email'),
   name: z.string().min(3, getMinRangeError('Name', 3)).max(100, getMaxRangeError('Name', 100)),
   password: z.string().min(8, minPass).max(100, maxPass)
 });
 
-const userPassSchema = z.object({
+const passwordSchema = z.object({
   password: z.string().min(8, minPass).max(100, maxPass),
   oldpassword: z.string().min(8, getMinRangeError('Old Password', 8)).max(100, getMaxRangeError('Old Password', 100))
 });
 
-const userLogin = z.object({
+const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, minPass).max(100, maxPass)
 });
@@ -31,4 +31,4 @@ const userImageUpdate = z.object({
   })
 });
 
-export { userLogin, userCreate, userPassSchema, userSocialUpdate, userImageUpdate };
+export { loginSchema, createSchema, passwordSchema, userSocialUpdate, userImageUpdate };
