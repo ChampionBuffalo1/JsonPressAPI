@@ -1,7 +1,6 @@
 import { Error } from 'mongoose';
-import { getZodError } from '../lib';
-import { UserType } from '../typings/model';
 import { Request, Response } from 'express';
+import { JwtPayload, getZodError } from '../lib';
 import BlogQueryHelper from '../models/query/blogQueries';
 import { createSchema, updateSchema } from '../validators/blogValidator';
 
@@ -49,7 +48,7 @@ async function getBlogBySlug(req: Request, res: Response) {
   });
 }
 async function getUnpublishedBlogs(req: Request, res: Response) {
-  const blogs = await BlogQueryHelper.getUnpublishedBlogsOfUser((req.user as UserType).id);
+const blogs = await BlogQueryHelper.getUnpublishedBlogsOfUser((req.user as JwtPayload).id);
   res.status(200).json({
     blogs
   });
@@ -61,7 +60,7 @@ async function unpublishBlog(req: Request, res: Response) {
     res.status(401).json({ message: 'Slug is required' });
     return;
   }
-  const blogs = await BlogQueryHelper.getUnpublishedBlogContent((req.user as UserType).id, {
+  const blogs = await BlogQueryHelper.getUnpublishedBlogContent((req.user as JwtPayload).id, {
     slug
   });
   res.status(200).json({
@@ -77,7 +76,7 @@ async function createBlog(req: Request, res: Response) {
     });
     return;
   }
-  const id = (req.user as UserType).id;
+  const id = (req.user as JwtPayload).id;
   try {
     const blog = await BlogQueryHelper.createBlog({
       ...schema.data,
@@ -105,7 +104,7 @@ async function updateBlog(req: Request, res: Response) {
     });
     return;
   }
-  const id = (req.user as UserType).id;
+  const id = (req.user as JwtPayload).id;
   try {
     const blog = await BlogQueryHelper.updateBlog(id, schema.data);
     res.status(200).json({ blog });
@@ -138,8 +137,8 @@ async function deleteBlog(req: Request, res: Response) {
     res.status(401).json({ message: 'slug is required' });
     return;
   }
-  const id = (req.user as UserType).id;
-  const role = (req.user as UserType).role;
+  const id = (req.user as JwtPayload).id;
+  const role = (req.user as JwtPayload).role;
   if (role !== 'normal') {
     const deleted = await BlogQueryHelper.deleteBlog(slug);
     res.status(200).json({ deleted });

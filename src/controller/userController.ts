@@ -1,11 +1,11 @@
 import bcrypt from 'bcrypt';
+import User from '../models/User';
 import { Request, Response } from 'express';
-import { createSchema, loginSchema, passwordSchema, userImageUpdate, userSocialUpdate } from '../validators';
+import { bcryptRounds } from '../Constants';
+import type { JwtPayload } from '../lib/passport';
 import { generateJwtToken, getZodError } from '../lib';
 import UserQueryHelper from '../models/query/userQueries';
-import { UserType } from '../typings/model';
-import { bcryptRounds } from '../Constants';
-import User from '../models/User';
+import { createSchema, loginSchema, passwordSchema, userImageUpdate, userSocialUpdate } from '../validators/userValidator';
 
 async function userLogin(req: Request, res: Response) {
   const schema = await loginSchema.spa(req.body);
@@ -49,7 +49,7 @@ async function userLogin(req: Request, res: Response) {
 }
 
 async function getSelf(req: Request, res: Response) {
-  const id = (req.user as UserType)?.id;
+  const id = (req.user as JwtPayload)?.id;
   const user = await UserQueryHelper.getUser(id, 'name role image socialMedia');
   if (!user) {
     res.status(404).send({
@@ -63,7 +63,7 @@ async function getSelf(req: Request, res: Response) {
 }
 
 async function getSelfRole(req: Request, res: Response) {
-  const id = (req.user as UserType)?.id;
+  const id = (req.user as JwtPayload)?.id;
   const user = await UserQueryHelper.getUser(id, 'role');
   if (!user) {
     res.status(404).send({
@@ -112,7 +112,7 @@ async function createUser(req: Request, res: Response) {
 async function changePassword(req: Request, res: Response) {
   const schema = await passwordSchema.spa(req.body);
   if (schema.success) {
-    const id = (req.user as UserType)?.id;
+    const id = (req.user as JwtPayload)?.id;
     const { password, oldpassword } = schema.data;
     const user = await UserQueryHelper.getUser(id, 'passwordHash');
     if (!user) {
@@ -147,7 +147,7 @@ async function changePassword(req: Request, res: Response) {
 }
 
 async function changeImage(req: Request, res: Response) {
-  const id = (req.user as UserType)?.id;
+  const id = (req.user as JwtPayload)?.id;
   const schema = await userImageUpdate.spa(req.body);
   if (!schema.success) {
     const message = getZodError(schema.error);
@@ -170,7 +170,7 @@ async function changeImage(req: Request, res: Response) {
 }
 
 async function changeSocials(req: Request, res: Response) {
-  const id = (req.user as UserType)?.id;
+  const id = (req.user as JwtPayload)?.id;
   const schema = await userSocialUpdate.spa(req.body);
   if (!schema.success) {
     const message = getZodError(schema.error);
@@ -200,7 +200,7 @@ async function changeSocials(req: Request, res: Response) {
 }
 
 async function deleteSelf(req: Request, res: Response) {
-  const id = (req.user as UserType)?.id;
+  const id = (req.user as JwtPayload)?.id;
   if (!id) {
     res.status(400).send('No id provided');
     return;
