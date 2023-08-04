@@ -1,7 +1,7 @@
 import { Error } from 'mongoose';
 import { Request, Response } from 'express';
-import { JwtPayload, getZodError } from '../lib';
 import BlogQueryHelper from '../models/query/blogQueries';
+import { JwtPayload, getZodError, sendError } from '../lib';
 import { createSchema, updateSchema } from '../validators/blogValidator';
 
 async function getAllBlogs(req: Request, res: Response) {
@@ -23,8 +23,7 @@ async function getPopularBlogs(req: Request, res: Response) {
 async function getBlogByCategory(req: Request, res: Response) {
   const category = req.params.category;
   if (!category) {
-    res.status(401).json({ message: 'Category is required' });
-    return;
+    sendError(res, 'EC01', 401);
   }
   const blogs = await BlogQueryHelper.getBlogByCategory(category);
   res.status(200).json({});
@@ -39,8 +38,7 @@ async function getAllCategory(_: unknown, res: Response) {
 async function getBlogBySlug(req: Request, res: Response) {
   const slug = req.query.query;
   if (!slug || typeof slug !== 'string') {
-    res.status(401).json({ message: 'Slug is required' });
-    return;
+    return sendError(res, 'ESL01', 401);
   }
   const blog = await BlogQueryHelper.getBlogBySlug(slug);
   res.status(200).json({
@@ -48,7 +46,7 @@ async function getBlogBySlug(req: Request, res: Response) {
   });
 }
 async function getUnpublishedBlogs(req: Request, res: Response) {
-const blogs = await BlogQueryHelper.getUnpublishedBlogsOfUser((req.user as JwtPayload).id);
+  const blogs = await BlogQueryHelper.getUnpublishedBlogsOfUser((req.user as JwtPayload).id);
   res.status(200).json({
     blogs
   });
@@ -57,8 +55,7 @@ const blogs = await BlogQueryHelper.getUnpublishedBlogsOfUser((req.user as JwtPa
 async function unpublishBlog(req: Request, res: Response) {
   const slug = req.query.query;
   if (!slug || typeof slug !== 'string') {
-    res.status(401).json({ message: 'Slug is required' });
-    return;
+    return sendError(res, 'ESL01', 401);
   }
   const blogs = await BlogQueryHelper.getUnpublishedBlogContent((req.user as JwtPayload).id, {
     slug
@@ -85,24 +82,19 @@ async function createBlog(req: Request, res: Response) {
     res.status(200).json({ blog });
   } catch (err) {
     if ((err as Error.ValidationError).message.startsWith('E11000')) {
-      res.status(401).json({ message: 'Slug already taken' });
-      return;
+      return sendError(res, 'ESL02', 401);
     }
-    res.status(401).json({ message: 'Something went wrong' });
+    sendError(res, 'E500');
   }
 }
 async function updateBlog(req: Request, res: Response) {
   const slug = req.params.slug;
   if (!slug) {
-    res.status(401).json({ message: 'slug is required' });
-    return;
+    return sendError(res, 'ESL01', 401);
   }
   const schema = await updateSchema.spa(req.body);
   if (!schema.success) {
-    res.status(401).json({
-      message: getZodError(schema.error)
-    });
-    return;
+    return sendError(res, 'EZ01', 400, getZodError(schema.error));
   }
   const id = (req.user as JwtPayload).id;
   try {
@@ -110,18 +102,16 @@ async function updateBlog(req: Request, res: Response) {
     res.status(200).json({ blog });
   } catch (err) {
     if ((err as Error.ValidationError).message.startsWith('E11000')) {
-      res.status(401).json({ message: 'Slug already taken' });
-      return;
+      return sendError(res, 'ESL02', 401);
     }
-    res.status(401).json({ message: 'Something went wrong' });
+    sendError(res, 'E500');
   }
 }
 
 async function publishBlog(req: Request, res: Response) {
   const slug = req.params.slug;
   if (!slug) {
-    res.status(401).json({ message: 'slug is required' });
-    return;
+    return sendError(res, 'ESL01', 401);
   }
   const blog = await BlogQueryHelper.publishBlog(slug);
   if (!blog) {
@@ -134,8 +124,7 @@ async function publishBlog(req: Request, res: Response) {
 async function deleteBlog(req: Request, res: Response) {
   const slug = req.query?.slug as string;
   if (!slug) {
-    res.status(401).json({ message: 'slug is required' });
-    return;
+    return sendError(res, 'ESL01', 401);
   }
   const id = (req.user as JwtPayload).id;
   const role = (req.user as JwtPayload).role;

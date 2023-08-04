@@ -3,8 +3,8 @@ import User from '../models/User';
 import { Request, Response } from 'express';
 import { bcryptRounds } from '../Constants';
 import type { JwtPayload } from '../lib/passport';
-import { generateJwtToken, getZodError } from '../lib';
 import UserQueryHelper from '../models/query/userQueries';
+import { generateJwtToken, getZodError, sendError } from '../lib';
 import {
   loginSchema,
   createSchema,
@@ -19,8 +19,7 @@ async function userLogin(req: Request, res: Response) {
     const { email, password } = schema.data;
     const user = await UserQueryHelper.getUserByEmail(email);
     if (!user) {
-      res.status(404).json({ message: 'User not found' });
-      return;
+      return sendError(res, 'E404', 404);
     }
     const valid = await bcrypt.compare(password, user.passwordHash);
 
@@ -41,15 +40,9 @@ async function userLogin(req: Request, res: Response) {
       });
       return;
     }
-    res.status(401).send({
-      message: {
-        password: 'Wrong email or password'
-      }
-    });
+    sendError(res, 'E401', 401);
   } else {
-    res.status(406).send({
-      message: getZodError(schema.error)
-    });
+    sendError(res, 'EZ01', 400, getZodError(schema.error));
   }
 }
 
@@ -57,10 +50,7 @@ async function getSelf(req: Request, res: Response) {
   const id = (req.user as JwtPayload)?.id;
   const user = await UserQueryHelper.getUser(id, 'name role image socialMedia');
   if (!user) {
-    res.status(404).send({
-      message: 'User not found'
-    });
-    return;
+    return sendError(res, 'E404', 404);
   }
   res.status(200).send({
     user
@@ -91,17 +81,11 @@ async function createUser(req: Request, res: Response) {
       });
     } catch (err) {
       if ((err as Error).message.startsWith('E11000')) {
-        res.status(400).send({
-          message: {
-            email: 'Email already exists'
-          }
-        });
+        sendError(res, 'E409', 409);
       }
     }
   } else {
-    res.status(406).send({
-      message: getZodError(schema.error)
-    });
+    sendError(res, 'EZ01', 400, getZodError(schema.error));
   }
 }
 
@@ -112,19 +96,11 @@ async function changePassword(req: Request, res: Response) {
     const { password, oldpassword } = schema.data;
     const user = await UserQueryHelper.getUser(id, 'passwordHash');
     if (!user) {
-      res.status(404).send({
-        message: 'User not found'
-      });
-      return;
+      return sendError(res, 'E404', 404);
     }
     const valid = await bcrypt.compare(oldpassword, user.passwordHash);
     if (!valid) {
-      res.status(401).send({
-        message: {
-          password: 'Wrong password'
-        }
-      });
-      return;
+      return sendError(res, 'E401', 401);
     }
     const newHash = await bcrypt.hash(password, bcryptRounds);
     await User.findOneAndUpdate(
@@ -137,8 +113,7 @@ async function changePassword(req: Request, res: Response) {
       message: 'Password changed'
     });
   } else {
-    const message = getZodError(schema.error);
-    res.status(400).json({ message });
+    sendError(res, 'EZ01', 400, getZodError(schema.error));
   }
 }
 
@@ -146,19 +121,12 @@ async function changeImage(req: Request, res: Response) {
   const id = (req.user as JwtPayload)?.id;
   const schema = await userImageUpdate.spa(req.body);
   if (!schema.success) {
-    const message = getZodError(schema.error);
-    res.status(400).send({
-      message
-    });
-    return;
+    return sendError(res, 'EZ01', 400, getZodError(schema.error));
   }
   const { image } = schema.data;
   const user = await UserQueryHelper.addImage(id, image);
   if (!user) {
-    res.status(500).send({
-      message: 'Something went wrong'
-    });
-    return;
+    return sendError(res, 'E404', 404);
   }
   res.status(200).send({
     user
@@ -169,26 +137,16 @@ async function changeSocials(req: Request, res: Response) {
   const id = (req.user as JwtPayload)?.id;
   const schema = await userSocialUpdate.spa(req.body);
   if (!schema.success) {
-    const message = getZodError(schema.error);
-    res.status(400).send({
-      message
-    });
-    return;
+    return sendError(res, 'EZ01', 400, getZodError(schema.error));
   }
   const { type, value } = schema.data;
   const user = await UserQueryHelper.userExists(id);
   if (!user) {
-    res.status(404).send({
-      message: 'User not found'
-    });
-    return;
+    return sendError(res, 'E404', 404);
   }
   const udpated = await UserQueryHelper.addSocialMedia(id, type, value);
   if (!udpated) {
-    res.status(500).send({
-      message: 'Something went wrong'
-    });
-    return;
+    return sendError(res, 'E500');
   }
   res.status(200).send({
     udpated
@@ -198,13 +156,11 @@ async function changeSocials(req: Request, res: Response) {
 async function deleteSelf(req: Request, res: Response) {
   const id = (req.user as JwtPayload)?.id;
   if (!id) {
-    res.status(400).send('No id provided');
-    return;
+    return sendError(res, 'E400', 400);
   }
   const user = await UserQueryHelper.userExists(id);
   if (!user) {
-    res.status(404).send('No user found');
-    return;
+    return sendError(res, 'E404', 404);
   }
   const deleted = await User.deleteOne({
     _id: id
@@ -214,9 +170,7 @@ async function deleteSelf(req: Request, res: Response) {
       message: 'User deleted'
     });
   } else {
-    res.status(500).send({
-      message: 'Something went wrong'
-    });
+    sendError(res, 'E500', 500);
   }
 }
 
