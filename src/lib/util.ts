@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import type { ZodError } from 'zod';
 import { JwtSecret } from '../Constants';
+import { Response } from 'express';
+import { ErrorCodes, GENERIC_ERROR } from './error';
 
 function generateJwtToken(payload: Record<string, string>, expiresIn?: string): string {
   return jwt.sign(JSON.stringify(payload), JwtSecret, expiresIn ? { expiresIn } : {});
@@ -22,4 +24,15 @@ function getMaxRangeError(field: string, max: number) {
   return `${field} must contain less than ${max} letter`;
 }
 
-export { generateJwtToken, getZodError, getMinRangeError, getMaxRangeError };
+function sendError(res: Response, code: keyof typeof ErrorCodes, status = 500, extra?: Record<string, string>) {
+  const message = ErrorCodes[code] || GENERIC_ERROR;
+  res.status(status).send({
+    status: code,
+    message: {
+      ...extra,
+      message
+    }
+  });
+}
+
+export { generateJwtToken, getZodError, getMinRangeError, getMaxRangeError, sendError };
