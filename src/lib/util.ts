@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { ZodError } from 'zod';
 import { JwtSecret } from '../Constants';
 import { Response } from 'express';
-import { ErrorCodes, GENERIC_ERROR } from './error';
+import { ErrorCodes } from './error';
 
 function generateJwtToken(payload: Record<string, string>, expiresIn?: string): string {
   return jwt.sign(JSON.stringify(payload), JwtSecret, expiresIn ? { expiresIn } : {});
@@ -25,7 +25,7 @@ function getMaxRangeError(field: string, max: number) {
 }
 
 function sendError(res: Response, code: keyof typeof ErrorCodes, status = 500, extra?: Record<string, string>) {
-  const message = ErrorCodes[code] || GENERIC_ERROR;
+  const message = ErrorCodes[code] || ErrorCodes.E000;
   res.status(status).send({
     status: code,
     message: {
