@@ -16,7 +16,6 @@ export type JwtPayload = {
 passport.use(
   new JwtStrategy(opts, async (jwt_payload: JwtPayload, done) => {
     try {
-      console.log(jwt_payload);
       if (!jwt_payload.id) return done(null, false);
       return done(null, jwt_payload);
     } catch (err) {
